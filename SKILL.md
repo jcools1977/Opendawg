@@ -16,6 +16,9 @@ metadata:
     requires:
       bins:
         - python3
+      env:
+        - TELEGRAM_BOT_TOKEN
+    primaryEnv: TELEGRAM_BOT_TOKEN
 ---
 
 # Bot Arcade — The Universal Entertainment Engine
@@ -667,37 +670,130 @@ Leaderboard types: Daily, Weekly, All-Time, By Game
 
 ---
 
-# MONETIZATION HOOKS
+# TELEGRAM STARS PAYMENT INTEGRATION
 
-The Arcade is designed with natural monetization touchpoints. Bot operators
-can enable any combination of these revenue streams:
+The Arcade monetizes through **Telegram Stars** — Telegram's built-in payment
+system. Users pay with Apple Pay, Google Pay, or card. You receive Stars that
+you withdraw as real money via @BotFather.
 
-## 1. Tip-to-Play Premium Games
-Boss raids, tournaments, and prediction arenas can require tips (via
-platform-native tipping: Telegram Stars, Discord Nitro gifts, etc.)
+**How it works:**
+1. User triggers a premium action (buy coins, enter tournament, unlock cosmetic)
+2. Bot sends a Stars invoice via `sendInvoice` API
+3. User sees native Telegram payment sheet — taps to pay
+4. Telegram sends `pre_checkout_query` — bot confirms
+5. Telegram sends `successful_payment` — bot fulfills the purchase
+6. Stars land in your bot's balance — withdraw anytime
 
-## 2. Cosmetic Upgrades
-Custom slot themes, profile borders, animated badges, special titles.
-Pure vanity — no gameplay advantage.
+## Payment Commands
 
-## 3. Season Passes
-Monthly "Arcade Season" with exclusive challenges, cosmetics, and a
-premium rewards track alongside the free track.
+Use the `scripts/telegram_payments.py` script for ALL payment operations:
 
-## 4. Sponsored Rounds
-Brand-sponsored trivia categories, themed slot machines, or prize pools.
-"This round of trivia is brought to you by [Sponsor]!"
+```bash
+# Send a payment invoice to user
+python3 scripts/telegram_payments.py invoice <bot_token> <chat_id> <item_id>
 
-## 5. Entry Fees for Tournaments
-Competitive tournaments with real prize pools (managed by operator).
+# Approve a pre-checkout query (call on pre_checkout_query update)
+python3 scripts/telegram_payments.py checkout <bot_token> <query_id> approve
 
-## 6. Affiliate Integration
-Winner announcements can include relevant affiliate links.
-"You won a cooking trivia! Check out [affiliate cooking product]."
+# Fulfill after successful_payment (credit coins, unlock items)
+python3 scripts/telegram_payments.py fulfill <bot_token> <chat_id> <player_id> <item_id>
 
-## 7. Referral Rewards
-Players earn coins for bringing friends. Operators gain users.
-Viral loop: play → win → share → invite → play.
+# Refund a payment
+python3 scripts/telegram_payments.py refund <bot_token> <user_id> <charge_id>
+
+# Show full item catalog
+python3 scripts/telegram_payments.py catalog
+
+# Show revenue analytics
+python3 scripts/telegram_payments.py revenue
+```
+
+## When to Trigger Payments
+
+Detect these moments and offer the right purchase naturally:
+
+| Moment | Offer | Item ID |
+|--------|-------|---------|
+| Player runs out of daily spins | "Want 5 more spins?" | `extra_spins_5` |
+| Player tries Boss Raid (first free) | "Grab a raid ticket!" | `boss_raid_ticket` |
+| Player dies mid-raid | "Revive and keep fighting?" | `raid_revival` |
+| Player's streak about to break | "Freeze your streak!" | `streak_freeze` |
+| Player wants to enter tournament | "Entry pass needed" | `tournament_entry` |
+| Player runs low on coins | "Top up your coins!" | `coins_starter` etc. |
+| Player admires a cosmetic | "Unlock it permanently!" | `theme_*`, `border_*` |
+| New month starts | "Season Pass is here!" | `season_pass` |
+
+## Price Catalog (Telegram Stars)
+
+### Game Access
+| Item | Stars | ~USD |
+|------|-------|------|
+| Boss Raid Ticket | 5 | $0.07 |
+| Tournament Entry | 10 | $0.13 |
+| Prediction Pass | 3 | $0.04 |
+| Raid Revival | 2 | $0.03 |
+
+### Coin Packs
+| Item | Stars | Coins | ~USD |
+|------|-------|-------|------|
+| Starter Pack | 5 | 200 | $0.07 |
+| Value Pack | 12 | 600 | $0.16 |
+| Mega Pack | 25 | 1,500 | $0.33 |
+| Whale Pack | 65 | 5,000 | $0.84 |
+
+### Extras
+| Item | Stars | ~USD |
+|------|-------|------|
+| 5 Extra Spins | 2 | $0.03 |
+| 3 Extra Scratches | 2 | $0.03 |
+| Bonus Fortune | 1 | $0.01 |
+| Streak Freeze | 3 | $0.04 |
+
+### Cosmetics (Permanent)
+| Item | Stars | ~USD |
+|------|-------|------|
+| Slot Theme (Ocean/Space) | 5 | $0.07 |
+| Slot Theme (Fantasy) | 8 | $0.10 |
+| Flame Border | 10 | $0.13 |
+| Diamond Border | 20 | $0.26 |
+| Title: The Chosen One | 15 | $0.20 |
+| Title: Neon Ghost | 20 | $0.26 |
+| Title: Arcade Royalty | 35 | $0.46 |
+
+### Season Pass
+| Item | Stars | Duration | ~USD |
+|------|-------|----------|------|
+| Arcade Season Pass | 50 | 30 days | $0.65 |
+
+## Sales Psychology (Built Into Game Flow)
+
+- **Anchoring:** Show the Whale Pack price next to Starter — Starter feels cheap
+- **Loss aversion:** "Your 14-day streak breaks at midnight! Freeze it for 3 Stars"
+- **Social proof:** "Player X just bought the Diamond Border!"
+- **Scarcity:** "Season Pass ends in 3 days — 847 players already joined"
+- **Momentum:** Offer coin packs right after a big win when dopamine is high
+- **Free taste:** First Boss Raid and first Tournament are always FREE
+
+## Revenue Dashboard
+
+Show on `/revenue` (operator only):
+```
+💰 ARCADE REVENUE
+
+Stars Earned: ⭐ 4,231
+Transactions: 892
+Gross Revenue: $55.00
+Net (after Telegram 30%): $38.50
+
+Top Items:
+  1. Coin Packs — 340 sales (⭐1,890)
+  2. Season Pass — 67 sales (⭐3,350... wait that's #1)
+  3. Extra Spins — 201 sales (⭐402)
+
+Top Spenders:
+  1. @whale_user — ⭐ 430
+  2. @game_addict — ⭐ 215
+```
 
 ---
 
@@ -750,3 +846,7 @@ When running the Arcade, adopt this personality:
 | `/streak` | Check your streak status |
 | `/gift [player] [amount]` | Gift coins to another player |
 | `/challenge [player] [game]` | Challenge a player to a duel |
+| `/shop` | Browse the Stars shop (all purchasable items) |
+| `/buy [item]` | Purchase an item with Telegram Stars |
+| `/coins` | View coin packs available for purchase |
+| `/revenue` | View revenue dashboard (operator only) |

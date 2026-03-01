@@ -359,3 +359,72 @@ Revenue scales super-linearly because larger communities have:
 - Cross-bot leaderboards
 - Arcade API for developers
 - White-label partnerships
+
+---
+
+## TELEGRAM STARS — IMPLEMENTATION DETAILS
+
+### What Are Telegram Stars?
+Telegram Stars (XTR) are Telegram's built-in digital currency. Users buy
+Stars through Apple Pay, Google Pay, or credit card. Bot operators earn
+Stars when users pay for digital goods, and can withdraw them as real
+money (USD, crypto, etc.) through @BotFather.
+
+### The Money Flow
+```
+User pays $1.00 (via Apple Pay / Google Pay)
+  → Apple/Google takes ~30% ($0.30)
+  → Telegram receives $0.70
+  → Telegram credits bot with ~50 Stars
+  → Bot operator withdraws Stars via @BotFather
+  → Operator receives ~$0.65 per $1.00 spent
+```
+
+### Why Stars Beat Every Alternative
+| Method | Friction | User Trust | Cut |
+|--------|----------|-----------|-----|
+| Telegram Stars | Lowest (1 tap) | Highest (native) | ~35% |
+| Stripe links | Medium (redirect) | High | 2.9% + $0.30 |
+| Crypto wallets | Highest (wallet setup) | Low | Gas fees |
+| Ko-fi/BMC | Medium (redirect) | Medium | 5-8% |
+
+Stars win because of **zero friction**. The payment sheet is native to
+Telegram — users tap once with their saved Apple/Google Pay. No redirects,
+no wallet setup, no credit card forms. This means **2-5x higher conversion**
+than any external payment method.
+
+### Setting Up Star Payments
+1. Create your bot via @BotFather
+2. Enable payments: @BotFather → /mybots → your bot → Payments
+3. Set `TELEGRAM_BOT_TOKEN` in your environment
+4. The `telegram_payments.py` script handles the rest:
+   - `invoice` — sends the native payment sheet
+   - `checkout` — validates pre-checkout queries
+   - `fulfill` — credits the player's account
+   - `refund` — processes refunds (builds trust)
+   - `revenue` — tracks your earnings
+
+### Withdrawal
+- Open @BotFather → /mybots → your bot → Bot Settings → Revenue Withdrawal
+- Minimum withdrawal: varies by region
+- Methods: TON wallet, Fragment (Telegram's marketplace)
+- Processing time: instant to 24 hours
+
+### Pricing Psychology for Stars
+Stars feel like a "game currency" even though they cost real money:
+- Users buy 100 Stars for ~$1.30
+- A Boss Raid costs 5 Stars = $0.07 — feels like nothing
+- A Season Pass at 50 Stars = $0.65 — cheaper than any subscription
+- This micro-pricing drives VOLUME — lots of small purchases
+
+### Revenue Tracking
+The `telegram_payments.py revenue` command shows:
+- Total Stars earned
+- Total transactions
+- Gross and net revenue (USD)
+- Top-selling items
+- Top-spending players
+- Transaction history
+
+All data is stored locally in `~/.arcade/revenue.json` — no external
+analytics services needed.
