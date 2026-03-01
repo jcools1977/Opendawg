@@ -9,6 +9,7 @@ description: >
   entertainment request. Also activates on boredom cues, celebration moments,
   or competitive banter in group chats.
 version: 1.0.0
+author: J. DeVere Cooley
 homepage: https://github.com/jcools1977/Opendawg
 metadata:
   openclaw:
